@@ -1,0 +1,10 @@
+name: ChatMentionsPro
+description: This plugin allows you to tag users in chat like in IRC.
+version: 0.1
+author: Ethan Gallant
+main: com.exclnetworks.chatMentionsPro.Main
+commands:
+    chattags:
+      description: Chattags base command.
+      usage: /chattags
+      aliases: [ct]
