@@ -11,8 +11,6 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.permissions.*;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.configuration.Configuration;
 
 
 import java.util.ArrayList;
@@ -21,24 +19,24 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 
 public class Main extends JavaPlugin implements Listener {
 
-    FileConfiguration config = getConfig();
+    private FileConfiguration config = getConfig();
 
-/*
-    final int MAX_MENTIONS = 2;
-    final Permission ADMIN = new Permission("skytags.admin");
-    final Permission USETAG = new Permission("skytags.use");
-    final ChatColor ALERT_COLOR = ChatColor.RED;
-    final ChatColor MENTION_COLOR = ChatColor.AQUA;
-    final String ALERT_PREFIX = ChatColor.LIGHT_PURPLE + "[SkyPvp Tags] ";
-    */
-    int MAX_MENTIONS;
-    Permission ADMIN;
-    Permission USETAG;
-    String ALERT_COLOR;
-    String MENTION_COLOR;
-    String ALERT_PREFIX;
-    ArrayList<Player> punishedPlayers = new ArrayList<>();
-    ArrayList<Player> optedOutPlayers = new ArrayList<>();
+    /*
+        final int MAX_MENTIONS = 2;
+        final Permission ADMIN = new Permission("skytags.admin");
+        final Permission USETAG = new Permission("skytags.use");
+        final ChatColor ALERT_COLOR = ChatColor.RED;
+        final ChatColor MENTION_COLOR = ChatColor.AQUA;
+        final String ALERT_PREFIX = ChatColor.LIGHT_PURPLE + "[SkyPvp Tags] ";
+        */
+    private int MAX_MENTIONS;
+    private Permission ADMIN;
+    private Permission USETAG;
+    private String ALERT_COLOR;
+    private String MENTION_COLOR;
+    private String ALERT_PREFIX;
+    private ArrayList<Player> punishedPlayers = new ArrayList<>();
+    private ArrayList<Player> optedOutPlayers = new ArrayList<>();
 
     @Override
     public void onEnable() {
@@ -66,7 +64,7 @@ public class Main extends JavaPlugin implements Listener {
             for (int i = 0; i < splitMessage.length; i++) {
                 for (Player playerToMention : Bukkit.getServer().getOnlinePlayers()) { // Verify if player is online and valid
                     if (playerToMention.getName().equalsIgnoreCase(splitMessage[i]) && !splitMessage[i].equalsIgnoreCase(event.getPlayer().getName())) { // Stop duplicate names, self-tagging and ensure the user matches the tag.
-                        if (!punishedPlayers.contains(playerToMention) && !optedOutPlayers.contains(playerToMention) || event.getPlayer().hasPermission(ADMIN)) {
+                        if (!punishedPlayers.contains(event.getPlayer()) && !optedOutPlayers.contains(playerToMention) || event.getPlayer().hasPermission(ADMIN)) {
                             if (!mentionedPlayers.contains(Bukkit.getPlayer(splitMessage[i])))
                                 splitMessage[i] = MENTION_COLOR + splitMessage[i] + playerChatColor; // Only change color for one of each name
                             mentionedPlayers.add(Bukkit.getPlayer(ChatColor.stripColor(splitMessage[i]))); //Add the player to list of mentioned players
@@ -95,10 +93,10 @@ public class Main extends JavaPlugin implements Listener {
     }
 
 
-    @EventHandler
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         Player player = (Player) sender;
         int length = args.length;
+        boolean succsess = false;
         if (cmd.getName().equalsIgnoreCase("chattags")) {
             if (length == 0) { //If it is the barebones command send info message
                 player.sendMessage(ChatColor.STRIKETHROUGH + "----------------------------------------------");
@@ -110,18 +108,22 @@ public class Main extends JavaPlugin implements Listener {
                     player.sendMessage(ChatColor.RED + "/ct glunmute <player> : unmutes the player from chattagging globally.");
                 }
                 player.sendMessage(ChatColor.STRIKETHROUGH + "----------------------------------------------");
+                succsess = true;
             } else if (length == 1) {
                 if (args[0].equalsIgnoreCase("on")) {
                     if (optedOutPlayers.contains(player)) optedOutPlayers.remove(player);
                     player.sendMessage(ALERT_PREFIX + ChatColor.BOLD + ALERT_COLOR + "You were opted back into chat tagging.");
+                    succsess = true;
                 } else if (args[0].equalsIgnoreCase("off")) {
                     if (optedOutPlayers.contains(player)) {
                         player.sendMessage(ALERT_PREFIX + ChatColor.BOLD + ALERT_COLOR + "You are already opted out of being tagged.");
+                        succsess = true;
                     } else {
                         optedOutPlayers.add(player);
                         player.sendMessage(ALERT_PREFIX + ChatColor.BOLD + ALERT_COLOR + "You were opted out of chat tagging.");
+                        succsess = true;
                     }
-                } else return false;
+                }
             } else if (length == 2) {
                 if (player.hasPermission(ADMIN)) {
                     if (args[0].equals("glmute")) {
@@ -129,13 +131,14 @@ public class Main extends JavaPlugin implements Listener {
                             for (Player playerToMute : Bukkit.getServer().getOnlinePlayers()) {
                                 if (playerToMute.getName().equalsIgnoreCase(args[1])) {
                                     player.sendMessage(ALERT_PREFIX + ChatColor.BOLD + ALERT_COLOR + "Player was muted from chattagging successfully.");
-                                    punishedPlayers.add(Bukkit.getServer().getPlayer(args[1]));
-                                    break;
+                                    punishedPlayers.add(playerToMute);
+                                    succsess = true;
                                 }
                             }
 
                         } else if (punishedPlayers.contains(Bukkit.getServer().getPlayer(args[1]))) {
                             player.sendMessage(ALERT_PREFIX + ChatColor.BOLD + ALERT_COLOR + "Player is already muted :(");
+                            succsess = true;
                         }
 
                     }
@@ -143,21 +146,25 @@ public class Main extends JavaPlugin implements Listener {
                         if (punishedPlayers.contains(Bukkit.getServer().getPlayer(args[1]))) {
                             player.sendMessage(ALERT_PREFIX + ChatColor.BOLD + ALERT_COLOR + "Player was unmuted from chattagging successfully.");
                             punishedPlayers.remove(Bukkit.getServer().getPlayer(args[1]));
+                            succsess = true;
                         } else if (!punishedPlayers.contains(Bukkit.getServer().getPlayer(args[1]))) {
                             player.sendMessage(ALERT_PREFIX + ChatColor.BOLD + ALERT_COLOR + "Player is not muted.:(");
+                            succsess = true;
                         }
-                    } else return false;
+                    }
                 } else if (!player.hasPermission(ADMIN)) {
                     player.sendMessage(ALERT_PREFIX + ChatColor.BOLD + ALERT_COLOR + "Sorry but you don't have permission to run the selected command!");
-                    return true;
+                    succsess = true;
                 }
-
             }
         }
+        if (succsess == false)
+            player.sendMessage(ALERT_PREFIX + ChatColor.BOLD + ALERT_COLOR + "Invalid Syntax. Please do /ct for more information.");
+
         return true;
     }
 
-    public ChatColor getColor(String message) {
+    private ChatColor getColor(String message) {
         for (ChatColor color : ChatColor.values()) {
             if (message.contains(color.toString()))
                 return color; //if the message contains this color then we'll return it
@@ -165,7 +172,7 @@ public class Main extends JavaPlugin implements Listener {
         return ChatColor.WHITE; //returns black by default (if it can't find a valid color)
     }
 
-    public void setupConfig(){
+    private void setupConfig() {
         config.addDefault("MaxMentions", 2);
         config.addDefault("AdminPermission", "skytags.admin");
         config.addDefault("UsePermission", "skytags.use");
