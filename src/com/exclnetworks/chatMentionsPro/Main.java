@@ -179,7 +179,6 @@ public class Main extends JavaPlugin implements Listener {
         config.addDefault("AlertColor", "&c");
         config.addDefault("MentionColor", "&a");
         config.addDefault("AlertPrefix", "&b[ChatMentionsPro]");
-        config.addDefault("NotificationSoundType", "LEVEL_UP");
         config.options().copyDefaults(true);
         saveConfig();
         MAX_MENTIONS = config.getInt("MaxMentions");
